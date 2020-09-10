@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# sample tmpfile
+# 1388559728 bubba_nate
+# 1388562935 tyrosinase
+# 1388564000 epic2025
+# 1388572120 epic2025
+
+source config.sh
+tmpfile='tmpfile'
+
+debug=1
+
+for lf in $logdir/*.gz; do
+    date=$(echo ${lf##*/} |cut -d\- -f1-3)
+    IFS=$'\n'
+    zgrep 'logged in with entity id' $lf |cut -d\  -f1,4 |tr -d '][' |cut -d/ -f1 \
+        |for ln in $(</dev/stdin); do
+        time=${ln% *}
+        user=${ln#* }
+        echo $(date -d "$date $time" '+%s') $user
+    done
+done >$tmpfile
+
+mkdir -p $usercachedir
+
+for usr in $(cat tmpfile |cut -d\  -f2 |sort -u); do
+    # only create the "first" file if it doesn't exist... this allows 
+    # processing only new logs instead of all of them.
+    if [[ ! -e $usercachedir/$usr.first ]]; then
+        [[ $debug -gt 0 ]] && echo "newuser: $usr"
+        grep $usr $tmpfile |sort -n |head -n1 |cut -d\  -f1 >$usercachedir/$usr.first
+    fi
+    [[ $debug -gt 0 ]] && echo "saw: $usr"
+    grep $usr $tmpfile |sort -n |tail -n1 |cut -d\  -f1 >$usercachedir/$usr.last
+
+    grep $usr $tmpfile |wc -l >$usercachedir/$usr.count
+done
+
+rm $tmpfile
+
+exit

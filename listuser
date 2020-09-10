@@ -1,0 +1,107 @@
+#!/bin/bash
+
+# the way I ought to do the sort is to sort the username list by the
+# timestamp in the desired file, then process the users in that order.
+
+source config.sh
+tmpfile=tmpfile
+
+showall=0
+showtime=0
+#showfirst=0
+#showlast=0
+sortfirst=0
+sortlast=0
+sortcount=0
+DEBUG=0
+
+# --seen
+# --first
+
+# --byfirst
+# --bylast
+
+if [[ -z $1 ]]; then
+    echo "usage: listuser <username> [username...]"
+    echo "       listuser --all"
+    echo "options: --byfirst --bylast --times"
+    exit
+fi
+
+until [[ -z $1 || ! $1 =~ ^-- ]]; do
+  case $1 in
+    "--debug")
+          DEBUG=1
+          shift;;
+    "--all")
+          showall=1
+          shift;;
+    "--byfirst")
+          sortfirst=1
+          shift;;
+    "--bylast")
+          sortlast=1
+          shift;;
+    "--bycount")
+          sortcount=1
+          shift;;
+    "--times")
+          showtime=1
+          shift;;
+    # "--seen")
+    #       showlast=1
+    #       shift;;
+    # "--first")
+    #       showfirst=1
+    #       shift;;
+    *) echo "What? : $1"; exit;;
+  esac
+done
+
+
+if [[ $showall -eq 1 ]]; then
+    # process all!
+    users=$(
+        for fl in $usercachedir/*.last; do
+            fl=${fl%.last}
+            echo ${fl##*/}
+        done
+    )
+else
+    users=${@}
+fi
+
+
+# the 'date' format pattern
+if [[ $showtime -eq 1 ]]; then
+    datefmt='+%F.%R'
+else
+    datefmt='+%F'
+fi
+    
+# prep the sort
+if [[ $sortfirst -eq 1 ]]; then
+    col='2,2'
+elif [[ $sortlast -eq 1 ]]; then
+    col='3,3'
+elif [[ $sortcount -eq 1 ]]; then
+    col='6.3n'
+else
+    col='1,1'
+fi
+
+today=$(date '+%s')
+for usr in $users; do
+    if [[ ! -e $usercachedir/$usr.last ]]; then
+        echo "No such user: $usr"
+    else
+        first=$(<$usercachedir/$usr.first)
+        last=$(<$usercachedir/$usr.last)
+        days=$((($today-$last)/60/60/24))
+        count=$(<$usercachedir/$usr.count)
+        printf "%-16s %s %s (%s days) (%s logins)\n" \
+            $usr $(date -d "@$first" "$datefmt") $(date -d "@$last" "$datefmt") $days $count
+    fi
+done |sort -b -k$col -k4.3nr
+
+exit
