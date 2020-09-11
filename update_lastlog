@@ -11,7 +11,7 @@ tmpfile='tmpfile'
 
 debug=1
 
-for lf in $logdir/*.gz; do
+for lf in $logdir/*.gz $logdir/latest.log; do
     date=$(echo ${lf##*/} |cut -d\- -f1-3)
     IFS=$'\n'
     zgrep 'logged in with entity id' $lf |cut -d\  -f1,4 |tr -d '][' |cut -d/ -f1 \

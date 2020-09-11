@@ -1,8 +1,4 @@
-homedir=/home/mcserver
-serverdir=$homedir/{mapdir}
-
+# serverdir=/home/mcserver/myworld
+serverdir={YOUR_MAP_DIR}
 logdir=$serverdir/logs
-claimdir=$serverdir/plugins/GriefPrevention/ClaimData
-
-# loginfo
 usercachedir=$serverdir/lastlogcache
